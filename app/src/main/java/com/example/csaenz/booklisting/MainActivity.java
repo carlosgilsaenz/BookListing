@@ -1,10 +1,8 @@
 package com.example.csaenz.booklisting;
 
-import android.content.AsyncTaskLoader;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.BinderThread;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -12,16 +10,17 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.EditText;
 import android.widget.ImageButton;
-import android.app.LoaderManager;
-import android.content.Loader;
 
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
@@ -32,13 +31,14 @@ public class MainActivity extends AppCompatActivity{
     /**
      * All Global variables and Bindings
      */
-    public static final String LOG_TAG = MainActivity.class.getName();
 
-    private static final String BOOKS_REQUEST_URL = "https://www.googleapis.com/books/v1/volumes?q=android&maxResults=1";
+    private static final String BOOKS_REQUEST_URL = "https://www.googleapis.com/books/v1/volumes?maxResults=10&q=";
 
     private Context mContext;
 
     private boolean mAsyncIsRunning;
+
+    private BookAdapter mAdapter;
 
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
@@ -51,6 +51,12 @@ public class MainActivity extends AppCompatActivity{
 
     @BindView(R.id.progress_spinner)
     ProgressBar mProgress_spinner;
+
+    @BindView(R.id.list_view)
+    ListView mListView;
+
+    @BindView(R.id.search_edit_text)
+    EditText mEditText;
 
     /**
      * MainActivity related methods
@@ -69,11 +75,22 @@ public class MainActivity extends AppCompatActivity{
 
         mAsyncIsRunning = false;
 
+        mAdapter = new BookAdapter(this, new ArrayList<Book>());
+
+        mListView.setAdapter(mAdapter);
+
         mSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                String editTextString = mEditText.getText().toString();
+
+                if(editTextString.isEmpty() || editTextString.equals("")){
+                    Toast.makeText(mContext,"No Input Provided In Search Bar", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
                 if(!mAsyncIsRunning){
-                    new BookAsyncTask().execute();
+                    new BookAsyncTask().execute(editTextString);
                 } else{
                     Toast.makeText(mContext,"STILL PROCESSING", Toast.LENGTH_SHORT).show();
                 }
@@ -96,13 +113,11 @@ public class MainActivity extends AppCompatActivity{
         mAsyncIsRunning = false;
     }
 
-    public void resultsSuccesssful(){
+    public void resultsSuccessful(){
         mProgress_spinner.setVisibility(View.GONE);
         mTextView.setVisibility(View.GONE);
         mAsyncIsRunning = false;
     }
-
-    public void showTextView(){mTextView.setVisibility(View.VISIBLE);}
 
     /**
      * Menu related methods
@@ -124,6 +139,13 @@ public class MainActivity extends AppCompatActivity{
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+
+            //  clear adapter and update screen
+            mAdapter.clear();
+            mAdapter.notifyDataSetChanged();
+            resultsFailed();
+
+            // Prompting for deletion
             Snackbar.make(mSearchButton, "Delete", Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show();
             return true;
@@ -136,10 +158,12 @@ public class MainActivity extends AppCompatActivity{
      *  Async inner class
      */
 
-    public class BookAsyncTask extends AsyncTask<Void, Void, Integer>{
+    public class BookAsyncTask extends AsyncTask<String, Void, Integer>{
+
+        private ArrayList<Book> mBooks;
 
         @Override
-        protected Integer doInBackground(Void... params) {
+        protected Integer doInBackground(String... strings) {
             //  Update user by displaying progressbar spinner
             publishProgress();
 
@@ -147,7 +171,7 @@ public class MainActivity extends AppCompatActivity{
             if(!QueryUtils.isConnected(mContext)){return 0;}
 
             //  Create URL with provided String
-            URL url = QueryUtils.createUrl(BOOKS_REQUEST_URL);
+            URL url = QueryUtils.createUrl(BOOKS_REQUEST_URL, strings[0]);
 
             //  Verify URL creation was successful
             if(url == null){return 1;}
@@ -167,10 +191,12 @@ public class MainActivity extends AppCompatActivity{
 
 
             // Extract relevant fields from the JSON response and create an {@link Event} object
-            List<Book> books = QueryUtils.extractFromJson(jsonResponse);
+            mBooks = QueryUtils.extractFromJson(jsonResponse);
 
-            if(books.isEmpty()){return 3;}
-            return null;
+            // Verify books is'nt empty
+            if(mBooks.isEmpty()){return 3;}
+
+            return 4;
         }
 
         @Override
@@ -198,6 +224,13 @@ public class MainActivity extends AppCompatActivity{
                 case 3:
                     Toast.makeText(mContext,"Problem with parsing data",Toast.LENGTH_SHORT).show();
                     resultsFailed();
+                    break;
+                case 4:
+                    //  clear adapter and add new content
+                    mAdapter.clear();
+                    mAdapter.addAll(mBooks);
+                    mAdapter.notifyDataSetChanged();
+                    resultsSuccessful();
                     break;
             }
         }

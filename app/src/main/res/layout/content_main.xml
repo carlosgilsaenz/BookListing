@@ -5,6 +5,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:descendantFocusability="beforeDescendants"
+    android:focusableInTouchMode="true"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context="com.example.csaenz.booklisting.MainActivity"
     tools:showIn="@layout/activity_main">
@@ -13,10 +15,11 @@
     android:id="@+id/list_view"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" />
+    android:layout_height="match_parent"
+    android:nestedScrollingEnabled="true"/>
+
 <ProgressBar
     android:id="@+id/progress_spinner"
-    style="@style/Widget.AppCompat.ProgressBar"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_centerInParent="true"
@@ -29,6 +32,7 @@
     android:layout_centerInParent="true"
     android:visibility="visible"
     android:textSize="16sp"
+    android:focusable="true"
     android:text="Use Search Bar for content" >
 </TextView>
 </RelativeLayout>

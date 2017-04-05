@@ -48,15 +48,14 @@ public class QueryUtils {
         }else return true;
     }
 
-    //TODO: Need to configure with textView input
-
     /**
      * Returns new URL object from the given string URL.
      */
-    public static URL createUrl(String stringUrl) {
+    public static URL createUrl(String urlString, String queryString) {
         URL url;
         try {
-            url = new URL(stringUrl);
+            urlString += queryString;
+            url = new URL(urlString);
         } catch (MalformedURLException exception) {
             Log.e(LOG_TAG, "Error with creating URL", exception);
             return null;
@@ -128,36 +127,43 @@ public class QueryUtils {
      */
     public static ArrayList<Book> extractFromJson(String json_string) {
 
-        // Create an empty ArrayList that we can start adding earthquakes to
+        //  Create an empty ArrayList that we can start adding earthquakes to
         ArrayList<Book> books = new ArrayList<>();
-        // Try to parse the JSON Response String. If there's a problem with the way the JSON
-        // is formatted, a JSONException exception object will be thrown.
+        //  Try to parse the JSON Response String. If there's a problem with the way the JSON
+        //  is formatted, a JSONException exception object will be thrown.
         try {
-            // build up a list of books objects with the corresponding data.
+            //  build up a list of books objects with the corresponding data.
             JSONObject rootObject = new JSONObject(json_string);
 
-            //get Array with all required data
+            //  get Array with all required data
             JSONArray jsonArray = rootObject.getJSONArray("items");
 
-            //parse through Array and extract needed data
+            //  parse through Array and extract needed data
             for(int i = 0; i < jsonArray.length(); i++){
-                //grab object of seismic data within the i'th place of Array
+
+                //  grab book within the i'th place of Array
                 JSONObject itemObject = jsonArray.getJSONObject(i);
 
+                //  grab volume info on selected book
                 JSONObject volumeInfoObject = itemObject.getJSONObject("volumeInfo");
 
+                //  save title onto local variable
                 String title = volumeInfoObject.getString("title");
 
+                //  Grab array of authors
                 JSONArray JSONAuthArray = volumeInfoObject.getJSONArray("authors");
 
+                //  String variable outside of for loop scope
                 String allAuthors = "";
 
+                //  Iterate through array saving each author to allAuthors String
                 for(int x = 0; x < JSONAuthArray.length(); x++){
-                    String author = JSONAuthArray.getString(i);
-                    allAuthors.concat(author + ",");
+                    String author = JSONAuthArray.getString(x);
+                    allAuthors += author + ", ";
                 }
 
-                allAuthors = allAuthors.substring(0, allAuthors.length() - 1);
+                //  Remove extra spacing and comma
+                allAuthors = allAuthors.substring(0, allAuthors.length() - 2);
 
                 //add data to ArrayList
                 books.add(new Book(title, allAuthors));
@@ -167,7 +173,8 @@ public class QueryUtils {
             // If an error is thrown when executing any of the above statements in the "try" block,
             // catch the exception here, so the app doesn't crash. Print a log message
             // with the message from the exception.
-            Log.e("QueryUtils", "Problem parsing the earthquake JSON results", e);
+            Log.e("QueryUtils", "Problem parsing the Books results", e);
+            books.clear();
         }
 
         // Return the list of earthquakes
