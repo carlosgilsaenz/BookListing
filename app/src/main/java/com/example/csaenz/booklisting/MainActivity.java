@@ -4,6 +4,7 @@ import android.content.AsyncTaskLoader;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.BinderThread;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -17,6 +18,7 @@ import android.content.Loader;
 
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.net.URL;
@@ -25,18 +27,18 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<Book>>{
+public class MainActivity extends AppCompatActivity{
 
     /**
      * All Global variables and Bindings
      */
-    private static final int BOOK_LOADER_ID = 0;
-
     public static final String LOG_TAG = MainActivity.class.getName();
 
     private static final String BOOKS_REQUEST_URL = "https://www.googleapis.com/books/v1/volumes?q=android&maxResults=1";
 
     private Context mContext;
+
+    private boolean mAsyncIsRunning;
 
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
@@ -65,10 +67,16 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
         mContext = MainActivity.this;
 
+        mAsyncIsRunning = false;
+
         mSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                new BookAsyncTask().execute(BOOKS_REQUEST_URL);
+                if(!mAsyncIsRunning){
+                    new BookAsyncTask().execute();
+                } else{
+                    Toast.makeText(mContext,"STILL PROCESSING", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -76,14 +84,25 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     /**
      * Helper methods
      */
-    public void showSpinner(){
+    public void startBackground(){
         mProgress_spinner.setVisibility(View.VISIBLE);
         mTextView.setVisibility(View.GONE);
+        mAsyncIsRunning = true;
     }
 
-    public void hideSpinner(){
+    public void resultsFailed(){
         mProgress_spinner.setVisibility(View.GONE);
+        mTextView.setVisibility(View.VISIBLE);
+        mAsyncIsRunning = false;
     }
+
+    public void resultsSuccesssful(){
+        mProgress_spinner.setVisibility(View.GONE);
+        mTextView.setVisibility(View.GONE);
+        mAsyncIsRunning = false;
+    }
+
+    public void showTextView(){mTextView.setVisibility(View.VISIBLE);}
 
     /**
      * Menu related methods
@@ -113,60 +132,74 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    public Loader<List<Book>> onCreateLoader(int id, Bundle args) {
-        return null;
-    }
+    /**
+     *  Async inner class
+     */
 
-    @Override
-    public void onLoadFinished(Loader<List<Book>> loader, List<Book> data) {
-
-    }
-
-    @Override
-    public void onLoaderReset(Loader<List<Book>> loader) {
-
-    }
-
-    public class BookAsyncTask extends AsyncTask<String, Void, Void> {
+    public class BookAsyncTask extends AsyncTask<Void, Void, Integer>{
 
         @Override
-        protected Void doInBackground(String... params) {
+        protected Integer doInBackground(Void... params) {
+            //  Update user by displaying progressbar spinner
             publishProgress();
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
 
-            URL url = QueryUtils.createUrl(params[0]);
-            Log.i("Background","URL = s" + url);
+            //  Method to check Network Connectivity
+            if(!QueryUtils.isConnected(mContext)){return 0;}
 
+            //  Create URL with provided String
+            URL url = QueryUtils.createUrl(BOOKS_REQUEST_URL);
+
+            //  Verify URL creation was successful
+            if(url == null){return 1;}
+
+            // Variable to use for HttpRequest
             String jsonResponse = "";
 
             try {
                 jsonResponse = QueryUtils.makeHttpRequest(url);
             } catch (IOException e) {
                 e.printStackTrace();
-                jsonResponse = "Error!!!!!";
-            }
-            finally {
-                Log.i("Background","jsonResponse: " + jsonResponse);
+                return 2;
             }
 
+            // Verify jsonResponse is not empty
+            if(jsonResponse.isEmpty() || jsonResponse.equals("")){return 2;}
+
+
+            // Extract relevant fields from the JSON response and create an {@link Event} object
+            List<Book> books = QueryUtils.extractFromJson(jsonResponse);
+
+            if(books.isEmpty()){return 3;}
             return null;
         }
 
         @Override
         protected void onProgressUpdate(Void... values) {
             super.onProgressUpdate(values);
-            showSpinner();
+            startBackground();
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            hideSpinner();
+        protected void onPostExecute(Integer integer) {
+            super.onPostExecute(integer);
+            switch(integer){
+                case 0:
+                    Toast.makeText(mContext,"No Internet connection",Toast.LENGTH_SHORT).show();
+                    resultsFailed();
+                    break;
+                case 1:
+                    Toast.makeText(mContext,"Error with URL creation",Toast.LENGTH_SHORT).show();
+                    resultsFailed();
+                    break;
+                case 2:
+                    Toast.makeText(mContext,"Problem connecting to server",Toast.LENGTH_SHORT).show();
+                    resultsFailed();
+                    break;
+                case 3:
+                    Toast.makeText(mContext,"Problem with parsing data",Toast.LENGTH_SHORT).show();
+                    resultsFailed();
+                    break;
+            }
         }
     }
 }

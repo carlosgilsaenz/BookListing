@@ -1,7 +1,14 @@
 package com.example.csaenz.booklisting;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Toast;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,6 +18,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 
 /**
  * Created by csaenz on 4/3/2017.
@@ -23,6 +31,24 @@ public class QueryUtils {
 
     private QueryUtils() {
     }
+
+    /**
+     *  Verify network connectivity
+     */
+    public static boolean isConnected(Context context){
+        //verify network state
+        ConnectivityManager connectivityManager =
+                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+
+        if (networkInfo == null || !networkInfo.isConnected() ||
+                (networkInfo.getType() != ConnectivityManager.TYPE_WIFI
+                        && networkInfo.getType() != ConnectivityManager.TYPE_MOBILE)){
+                return false;
+        }else return true;
+    }
+
+    //TODO: Need to configure with textView input
 
     /**
      * Returns new URL object from the given string URL.
@@ -45,12 +71,6 @@ public class QueryUtils {
 
         String jsonResponse = "";
 
-        // If the URL is null, then return early.
-        if (url == null) {
-            Log.e(LOG_TAG, "Error jsonResponse =  " + jsonResponse);
-            return jsonResponse;
-        }
-
         HttpURLConnection urlConnection = null;
         InputStream inputStream = null;
         try {
@@ -71,7 +91,7 @@ public class QueryUtils {
 
         } catch (IOException e) {
             // Handle the exception
-            Log.e(LOG_TAG, "Problem retrieving the earthquake JSON results.", e);
+            Log.e(LOG_TAG, "Problem retrieving the JSON results.", e);
         } finally {
             if (urlConnection != null) {
                 urlConnection.disconnect();
@@ -100,6 +120,58 @@ public class QueryUtils {
             }
         }
         return output.toString();
+    }
+
+    /**
+     * Return a list of {@link Book} objects that has been built up from
+     * parsing a JSON response.
+     */
+    public static ArrayList<Book> extractFromJson(String json_string) {
+
+        // Create an empty ArrayList that we can start adding earthquakes to
+        ArrayList<Book> books = new ArrayList<>();
+        // Try to parse the JSON Response String. If there's a problem with the way the JSON
+        // is formatted, a JSONException exception object will be thrown.
+        try {
+            // build up a list of books objects with the corresponding data.
+            JSONObject rootObject = new JSONObject(json_string);
+
+            //get Array with all required data
+            JSONArray jsonArray = rootObject.getJSONArray("items");
+
+            //parse through Array and extract needed data
+            for(int i = 0; i < jsonArray.length(); i++){
+                //grab object of seismic data within the i'th place of Array
+                JSONObject itemObject = jsonArray.getJSONObject(i);
+
+                JSONObject volumeInfoObject = itemObject.getJSONObject("volumeInfo");
+
+                String title = volumeInfoObject.getString("title");
+
+                JSONArray JSONAuthArray = volumeInfoObject.getJSONArray("authors");
+
+                String allAuthors = "";
+
+                for(int x = 0; x < JSONAuthArray.length(); x++){
+                    String author = JSONAuthArray.getString(i);
+                    allAuthors.concat(author + ",");
+                }
+
+                allAuthors = allAuthors.substring(0, allAuthors.length() - 1);
+
+                //add data to ArrayList
+                books.add(new Book(title, allAuthors));
+            }
+
+        } catch (JSONException e) {
+            // If an error is thrown when executing any of the above statements in the "try" block,
+            // catch the exception here, so the app doesn't crash. Print a log message
+            // with the message from the exception.
+            Log.e("QueryUtils", "Problem parsing the earthquake JSON results", e);
+        }
+
+        // Return the list of earthquakes
+        return books;
     }
 }
 
