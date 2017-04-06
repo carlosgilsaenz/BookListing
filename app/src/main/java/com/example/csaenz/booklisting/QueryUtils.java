@@ -139,7 +139,7 @@ public class QueryUtils {
             JSONArray jsonArray = rootObject.getJSONArray("items");
 
             //  parse through Array and extract needed data
-            for(int i = 0; i < jsonArray.length(); i++){
+            for (int i = 0; i < jsonArray.length(); i++) {
 
                 //  grab book within the i'th place of Array
                 JSONObject itemObject = jsonArray.getJSONObject(i);
@@ -150,20 +150,23 @@ public class QueryUtils {
                 //  save title onto local variable
                 String title = volumeInfoObject.getString("title");
 
-                //  Grab array of authors
-                JSONArray JSONAuthArray = volumeInfoObject.getJSONArray("authors");
-
                 //  String variable outside of for loop scope
                 String allAuthors = "";
 
-                //  Iterate through array saving each author to allAuthors String
-                for(int x = 0; x < JSONAuthArray.length(); x++){
-                    String author = JSONAuthArray.getString(x);
-                    allAuthors += author + ", ";
-                }
+                if(!volumeInfoObject.isNull("authors")){
 
-                //  Remove extra spacing and comma
-                allAuthors = allAuthors.substring(0, allAuthors.length() - 2);
+                    //  Grab array of authors
+                    JSONArray JSONAuthArray = volumeInfoObject.getJSONArray("authors");
+
+                    //  Iterate through array saving each author to allAuthors String
+                    for (int x = 0; x < JSONAuthArray.length(); x++) {
+                        String author = JSONAuthArray.getString(x);
+                        allAuthors += author + ", ";
+                    }
+
+                    //  Remove extra spacing and comma
+                    allAuthors = allAuthors.substring(0, allAuthors.length() - 2);
+                }
 
                 //add data to ArrayList
                 books.add(new Book(title, allAuthors));
@@ -174,7 +177,7 @@ public class QueryUtils {
             // catch the exception here, so the app doesn't crash. Print a log message
             // with the message from the exception.
             Log.e("QueryUtils", "Problem parsing the Books results", e);
-            books.clear();
+//            books.clear();
         }
 
         // Return the list of earthquakes

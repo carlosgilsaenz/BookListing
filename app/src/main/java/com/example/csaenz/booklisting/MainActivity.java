@@ -1,12 +1,13 @@
 package com.example.csaenz.booklisting;
 
+import android.app.LoaderManager;
+import android.content.AsyncTaskLoader;
 import android.content.Context;
-import android.os.AsyncTask;
+import android.content.Loader;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -26,19 +27,30 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class MainActivity extends AppCompatActivity{
+public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<Book>>{
 
     /**
      * All Global variables and Bindings
      */
+    private static final int RESULTS_ON_CREATE = 98;
+
+    private static final int RESULT_DEFAULT = 99;
+
+    private static final int BOOK_LOADER_ID = 0;
 
     private static final String BOOKS_REQUEST_URL = "https://www.googleapis.com/books/v1/volumes?maxResults=10&q=";
 
+    private LoaderManager.LoaderCallbacks<List<Book>> mCallback;
+
     private Context mContext;
 
-    private boolean mAsyncIsRunning;
-
     private BookAdapter mAdapter;
+
+    private static int mResults;
+
+    private static String mQueryString;
+
+    private boolean mAsyncIsRunning;
 
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
@@ -75,22 +87,38 @@ public class MainActivity extends AppCompatActivity{
 
         mAsyncIsRunning = false;
 
+        mCallback = this;
+
         mAdapter = new BookAdapter(this, new ArrayList<Book>());
 
+        mResults = RESULTS_ON_CREATE;
+
         mListView.setAdapter(mAdapter);
+
+        getLoaderManager().initLoader(BOOK_LOADER_ID, null, mCallback);
 
         mSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String editTextString = mEditText.getText().toString();
+                String editTextString = mEditText.getText().toString().trim();
 
-                if(editTextString.isEmpty() || editTextString.equals("")){
-                    Toast.makeText(mContext,"No Input Provided In Search Bar", Toast.LENGTH_SHORT).show();
+                if (editTextString.isEmpty() || editTextString.equals("")){
+                    Toast.makeText(mContext,"No Input on search", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
                 if(!mAsyncIsRunning){
-                    new BookAsyncTask().execute(editTextString);
+
+                    mQueryString = editTextString;
+
+                    //  Update user by displaying progressbar spinner
+                    startBackground();
+
+                    mAdapter.clear();
+
+                    getLoaderManager().restartLoader(BOOK_LOADER_ID, null, mCallback);
+
+                    //new BookAsyncTask().execute(editTextString);
                 } else{
                     Toast.makeText(mContext,"STILL PROCESSING", Toast.LENGTH_SHORT).show();
                 }
@@ -117,6 +145,14 @@ public class MainActivity extends AppCompatActivity{
         mProgress_spinner.setVisibility(View.GONE);
         mTextView.setVisibility(View.GONE);
         mAsyncIsRunning = false;
+    }
+
+    public static int getResults() {
+        return mResults;
+    }
+
+    public static void setResults(int results) {
+        mResults = results;
     }
 
     /**
@@ -155,26 +191,92 @@ public class MainActivity extends AppCompatActivity{
     }
 
     /**
-     *  Async inner class
+     *  LoadManager methods
      */
+    @Override
+    public Loader<List<Book>> onCreateLoader(int id, Bundle args) {
+        return new BookLoader(mContext);
+    }
 
-    public class BookAsyncTask extends AsyncTask<String, Void, Integer>{
+    @Override
+    public void onLoadFinished(Loader<List<Book>> loader, List<Book> data) {
 
-        private ArrayList<Book> mBooks;
+        int results = getResults();
+
+        switch(results){
+            case 0:
+                Toast.makeText(mContext,"No Internet connection",Toast.LENGTH_SHORT).show();
+                resultsFailed();
+                break;
+            case 1:
+                Toast.makeText(mContext,"Error with URL creation",Toast.LENGTH_SHORT).show();
+                resultsFailed();
+                break;
+            case 2:
+                Toast.makeText(mContext,"Problem connecting to server",Toast.LENGTH_SHORT).show();
+                resultsFailed();
+                break;
+            case 3:
+                Toast.makeText(mContext,"Problem with parsing data",Toast.LENGTH_SHORT).show();
+                resultsFailed();
+                break;
+            default:
+                if(data == null){
+                    resultsFailed();
+                }
+                else {
+                    mAdapter.clear();
+                    mAdapter.addAll(data);
+                    resultsSuccessful();
+                }
+                mAdapter.notifyDataSetChanged();
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<List<Book>> loader) {
+        mAdapter.clear();
+    }
+
+    /**
+     *  AsyncTask Loader
+     */
+    public static class BookLoader extends AsyncTaskLoader<List<Book>> {
+
+        public BookLoader(Context context) {
+            super(context);
+        }
 
         @Override
-        protected Integer doInBackground(String... strings) {
-            //  Update user by displaying progressbar spinner
-            publishProgress();
+        protected void onStartLoading() {
+            forceLoad();
+        }
+
+        @Override
+        public List<Book> loadInBackground() {
+
+            if(mResults == RESULTS_ON_CREATE){
+                //  Ensure results are reset
+                setResults(RESULT_DEFAULT);
+                return null;
+            }
+
+            //  Ensure results are reset
+            setResults(RESULT_DEFAULT);
 
             //  Method to check Network Connectivity
-            if(!QueryUtils.isConnected(mContext)){return 0;}
+            if(!QueryUtils.isConnected(getContext())){
+                setResults(0);
+                return null;
+            }
 
             //  Create URL with provided String
-            URL url = QueryUtils.createUrl(BOOKS_REQUEST_URL, strings[0]);
+            URL url = QueryUtils.createUrl(BOOKS_REQUEST_URL, mQueryString);
 
             //  Verify URL creation was successful
-            if(url == null){return 1;}
+            if(url == null){
+                setResults(1);
+                return null;}
 
             // Variable to use for HttpRequest
             String jsonResponse = "";
@@ -183,56 +285,25 @@ public class MainActivity extends AppCompatActivity{
                 jsonResponse = QueryUtils.makeHttpRequest(url);
             } catch (IOException e) {
                 e.printStackTrace();
-                return 2;
+                setResults(2);
+                return null;
             }
 
             // Verify jsonResponse is not empty
-            if(jsonResponse.isEmpty() || jsonResponse.equals("")){return 2;}
+            if(jsonResponse.isEmpty() || jsonResponse.equals("")){
+                setResults(2);
+                return null;}
 
 
             // Extract relevant fields from the JSON response and create an {@link Event} object
-            mBooks = QueryUtils.extractFromJson(jsonResponse);
+            ArrayList<Book> mBooks = QueryUtils.extractFromJson(jsonResponse);
 
             // Verify books is'nt empty
-            if(mBooks.isEmpty()){return 3;}
+            if(mBooks.isEmpty()){
+                setResults(3);
+                return null;}
 
-            return 4;
-        }
-
-        @Override
-        protected void onProgressUpdate(Void... values) {
-            super.onProgressUpdate(values);
-            startBackground();
-        }
-
-        @Override
-        protected void onPostExecute(Integer integer) {
-            super.onPostExecute(integer);
-            switch(integer){
-                case 0:
-                    Toast.makeText(mContext,"No Internet connection",Toast.LENGTH_SHORT).show();
-                    resultsFailed();
-                    break;
-                case 1:
-                    Toast.makeText(mContext,"Error with URL creation",Toast.LENGTH_SHORT).show();
-                    resultsFailed();
-                    break;
-                case 2:
-                    Toast.makeText(mContext,"Problem connecting to server",Toast.LENGTH_SHORT).show();
-                    resultsFailed();
-                    break;
-                case 3:
-                    Toast.makeText(mContext,"Problem with parsing data",Toast.LENGTH_SHORT).show();
-                    resultsFailed();
-                    break;
-                case 4:
-                    //  clear adapter and add new content
-                    mAdapter.clear();
-                    mAdapter.addAll(mBooks);
-                    mAdapter.notifyDataSetChanged();
-                    resultsSuccessful();
-                    break;
-            }
+            return mBooks;
         }
     }
 }
