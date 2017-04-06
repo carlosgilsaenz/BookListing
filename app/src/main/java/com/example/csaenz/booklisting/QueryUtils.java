@@ -3,7 +3,6 @@ package com.example.csaenz.booklisting;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.text.TextUtils;
 import android.util.Log;
 
 import org.json.JSONArray;

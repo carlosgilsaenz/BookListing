@@ -3,36 +3,22 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:descendantFocusability="beforeDescendants"
-    android:focusableInTouchMode="true"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context="com.example.csaenz.booklisting.MainActivity"
-    tools:showIn="@layout/activity_main">
+    tools:showIn="@layout/activity_main"
+    style="@style/RelativeLayout">
 
 <ListView
     android:id="@+id/list_view"
-    android:orientation="vertical"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:nestedScrollingEnabled="true"/>
+    style="@style/ListView" />
 
 <ProgressBar
     android:id="@+id/progress_spinner"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_centerInParent="true"
-    android:visibility="gone"/>
+    style="@style/ProgressBar" />
 
 <TextView
     android:id="@+id/text_view_empty"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_centerInParent="true"
-    android:visibility="visible"
-    android:textSize="16sp"
-    android:focusable="true"
-    android:text="Use Search Bar for content" >
+    android:text="Use Search Bar for content"
+    style="@style/NoContentText">
 </TextView>
 </RelativeLayout>

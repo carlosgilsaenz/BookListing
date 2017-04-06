@@ -1,5 +1,10 @@
 <resources>
     <dimen name="app_bar_height">180dp</dimen>
-    <dimen name="fab_margin">16dp</dimen>
     <dimen name="text_margin">20dp</dimen>
+    <dimen name="search_button_padding">8dp</dimen>
+
+    <dimen name="title_text_size">36sp</dimen>
+    <dimen name="basic_text_size">16sp</dimen>
+    <dimen name="book_text_size">24sp</dimen>
+
 </resources>

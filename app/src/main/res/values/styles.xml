@@ -17,4 +17,96 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="CollapsingStyle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:fitsSystemWindows">true</item>
+    </style>
+
+    <style name="AppBarLayout">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">@dimen/app_bar_height</item>
+        <item name="android:fitsSystemWindows">true</item>
+        <item name="android:theme">@style/AppTheme.AppBarOverlay</item>
+    </style>
+
+    <style name="ToolBar">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">?attr/actionBarSize</item>
+        <item name="android:layout_gravity">bottom</item>
+    </style>
+
+    <style name="SearchButton">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:padding">@dimen/search_button_padding</item>
+        <item name="android:clickable">true</item>
+        <item name="android:background">@null</item>
+    </style>
+
+    <style name="SearchBar">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:lines">1</item>
+    </style>
+
+    <style name="TitleText">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_margin">@dimen/text_margin</item>
+        <item name="android:textSize">@dimen/title_text_size</item>
+    </style>
+
+    <style name="RelativeLayout">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:descendantFocusability">beforeDescendants</item>
+        <item name="android:focusableInTouchMode">true</item>
+    </style>
+
+    <style name="ListView">
+        <item name="android:orientation">vertical</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:nestedScrollingEnabled">true</item>
+    </style>
+
+    <style name="ProgressBar">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_centerInParent">true</item>
+        <item name="android:visibility">gone</item>
+    </style>
+
+    <style name="NoContentText">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_centerInParent">true</item>
+        <item name="android:visibility">visible</item>
+        <item name="android:textSize">@dimen/basic_text_size</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <style name="LinearLayout">
+        <item name="android:orientation">vertical</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:padding">@dimen/text_margin</item>
+    </style>
+
+    <style name="Book">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">@dimen/book_text_size</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:lines">1</item>
+    </style>
+
+    <style name="Author">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">@dimen/basic_text_size</item>
+        <item name="android:lines">1</item>
+    </style>
+
 </resources>
